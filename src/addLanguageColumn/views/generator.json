@@ -1,0 +1,8 @@
+{
+    "name": "Add Language Column",
+    "generator": "app\\generators\\addLanguageColumn\\AddLanguageColumnGenerator",
+    "templates": {
+      "default": "default"
+    }
+}
+  

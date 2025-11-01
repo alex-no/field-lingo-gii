@@ -1,0 +1,33 @@
+{
+    "name": "alex-no/field-lingo-gii",
+    "description": "Gii tools for Field-Lingo (Yii2): Extended model generator and Add-Language generator.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Oleksandr Nosov",
+            "email": "alex@4n.com.ua"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "alex-no/field-lingo": "*"
+    },
+    "require-dev": {
+        "yiisoft/yii2": "^2.0 || *",
+        "yiisoft/yii2-gii": "^2.2 || ^2.3 || *",
+        "phpunit/phpunit": "^9.0 || ^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AlexNo\\FieldLingoGii\\": "src/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.1-dev"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

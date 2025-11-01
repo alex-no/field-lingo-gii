@@ -1,0 +1,16 @@
+# Composer
+/vendor/
+composer.lock
+
+# Logs and temp
+*.log
+/tmp/
+/.cache/
+
+# IDE and OS
+.vscode/
+Thumbs.db
+
+# Node (for tools)
+package-lock.json
+/release_tag.bat
