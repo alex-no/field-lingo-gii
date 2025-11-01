@@ -92,7 +92,7 @@ After registering with Gii, two new generators will appear:
 ```css
 field-lingo-gii/          # repo root
 ├─ src/
-│  ├─ extendedModel
+│  ├─ ExtendedModel
 │  │  ├─ ExtendedModelGenerator.php
 │  │  ├─ Helpers/
 │  │  │  └─ ViewRenderer.php
@@ -106,7 +106,7 @@ field-lingo-gii/          # repo root
 │  │  │     └─ preview.php
 │  │  └─ views/
 │  │     └─ form.php
-│  └─ addLanguageColumn
+│  └─ AddLanguageColumn
 │     ├─ AddLanguageGenerator.php
 │     ├─ SqlCodeFile.php
 │     ├─ Helpers/

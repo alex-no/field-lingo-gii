@@ -1,5 +1,4 @@
 <?php
-
 use yii\gii\generators\model\Generator;
 use yii\helpers\Url;
 use yii\helpers\ArrayHelper;
@@ -7,7 +6,7 @@ use yii\helpers\Html;
 
 /** @var yii\web\View $this */
 /** @var yii\widgets\ActiveForm $form */
-/** @var yii\gii\generators\model\Generator $generator */
+/** @var AlexNo\FieldLingoGii\extendedModel\ExtendedModelGenerator $generator */
 
 echo $form->field($generator, 'db');
 echo $form->field($generator, 'useTablePrefix')->checkbox();
@@ -23,7 +22,6 @@ echo $form->field($generator, 'standardizeCapitals')->checkbox();
 echo $form->field($generator, 'singularize')->checkbox();
 echo $form->field($generator, 'modelClass');
 echo $form->field($generator, 'ns');
-//echo $form->field($generator, 'baseClass');
 echo $form->field($generator, 'baseClass')->textInput([
     'list' => 'base-class-options',
     'autocomplete' => 'off',
@@ -47,7 +45,6 @@ echo $form->field($generator, 'generateLabelsFromComments')->checkbox();
 echo $form->field($generator, 'generateQuery')->checkbox();
 echo $form->field($generator, 'queryNs');
 echo $form->field($generator, 'queryClass');
-//echo $form->field($generator, 'queryBaseClass');
 echo $form->field($generator, 'queryBaseClass')->textInput([
     'list' => 'query-base-class-options',
     'autocomplete' => 'off',

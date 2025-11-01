@@ -1,16 +1,16 @@
 <?php
+namespace AlexNo\FieldLingoGii\ExtendedModel;
 /**
- * [Brief description of the file or class/module]
- *
- * @author [Oleksandr Nosov]
- * @copyright [2025] [Oleksandr Nosov]
- * @license [License Type, GPL]
- * @version [Version Number, 1.0.0]
- *
- * [Advanced Model Generator]
+ * Extended Model Generator for Field-Lingo (Yii2 / Gii)
+ * This generator creates a pair of classes for each model:
+ *  - A base class containing the generated code
+ *  - A child class for custom logic
+ * It also adds email validation rules for fields containing "mail" or "email".
+ * @license MIT
+ * @package AlexNo\FieldLingoGii\ExtendedModel
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
  */
-namespace app\gii\extendedModel;
-
 use Yii;
 use yii\gii\generators\model\Generator;
 use yii\gii\CodeFile;
@@ -21,18 +21,19 @@ class ExtendedModelGenerator extends Generator
 
     public $baseClassOptions = [
         'yii\db\ActiveRecord',
-        'app\components\i18n\AdvActiveRecord',
+        'AlexNo\FieldLingo\Adapters\Yii2\LingoActiveRecord',
     ];
 
     public $queryBaseClassOptions = [
         'yii\db\ActiveQuery',
-        'app\components\i18n\AdvActiveQuery',
+        'AlexNo\FieldLingo\Adapters\Yii2\LingoActiveQuery',
     ];
 
     public function init()
     {
         parent::init();
 
+        // merge options from Gii config if provided (legacy behavior: merge from 'model' generator)
         $config = Yii::$app->getModule('gii')->generators['model'] ?? [];
 
         if (!empty($config['baseClassOptions']) && is_array($config['baseClassOptions'])) {
@@ -46,12 +47,12 @@ class ExtendedModelGenerator extends Generator
 
     public function getName()
     {
-        return 'Advanced Model Generator';
+        return 'Field-Lingo Extended Model Generator';
     }
 
     public function getDescription()
     {
-        return 'Generates a pair of classes - parent and child. The parent class will contain standard model-procedures, while the child class will include your own methods and properties.';
+        return 'Generates a pair of classes - parent (base) and child. Parent contains generated code; child is for your custom logic.';
     }
 
     public function rules()
@@ -102,13 +103,18 @@ class ExtendedModelGenerator extends Generator
         return $rules;
     }
 
-    //  Generate the model files
+    /**
+     * Generate the model files (override to put main class into base/ and create child class)
+     *
+     * @return CodeFile[]
+     */
     public function generate()
     {
         $files = parent::generate();
         $modelClass = $this->getModelClass();
         $baseFileName = $modelClass . '.php';
 
+        // move the generated model file into base/ directory
         foreach ($files as $i => $file) {
             if (str_ends_with($file->path, $baseFileName)) {
                 $files[$i]->path = dirname($file->path) . '/base/' . $modelClass . '.php';
@@ -119,7 +125,9 @@ class ExtendedModelGenerator extends Generator
             }
         }
 
+        // generate child class if requested
         if ($this->generateChildClass) {
+            // $this->ns is provided by user in the generator form (e.g. app\models)
             $childPath = Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/' . $modelClass . '.php';
             if (!file_exists($childPath)) {
                 $files[] = new CodeFile(
@@ -133,18 +141,28 @@ class ExtendedModelGenerator extends Generator
 
         return $files;
     }
+
+    /**
+     * @return string
+     * @throws \RuntimeException
+     */
     public function getModelClass()
     {
-        // Check if the model class is set
         if (empty($this->modelClass)) {
             throw new \RuntimeException('modelClass is not set.');
         }
         return basename(str_replace('\\', '/', $this->modelClass));
     }
 
+    /**
+     * Return the path to custom form view shipped with the package.
+     *
+     * @return string
+     */
     public function formView()
     {
-        return '@gii/extendedModel/views/form.php';
+        // path to the form view inside this package
+        return '@vendor/alex-no/field-lingo-gii/src/extendedModel/views/form.php';
     }
 
     public function generateLabels($table)
@@ -155,12 +173,20 @@ class ExtendedModelGenerator extends Generator
         }
         return $labels;
     }
-    // Set the default base class and query base class
+
+    /**
+     * Load posted data and attempt to autodetect base class / query base class from existing base file.
+     *
+     * @param array $data
+     * @param null|string $formName
+     * @return bool
+     */
     public function load($data, $formName = null)
     {
         $loaded = parent::load($data, $formName);
 
         if ($loaded && isset($this->modelClass) && $this->modelClass !== '') {
+            // look for existing base class file in app/models/base/<Model>.php
             $path = Yii::getAlias('@app/models/base/' . str_replace('\\', '/', $this->modelClass)) . '.php';
             if (is_file($path)) {
                 $content = file_get_contents($path);
@@ -170,7 +196,7 @@ class ExtendedModelGenerator extends Generator
                     $this->baseClass = $matches[1];
                 }
 
-                // Find by queryClass
+                // If queryClass is set, try to detect queryBaseClass
                 if ($this->queryClass !== '') {
                     $queryPath = Yii::getAlias('@app/models/base/' . str_replace('\\', '/', $this->queryClass)) . '.php';
                     if (is_file($queryPath)) {
