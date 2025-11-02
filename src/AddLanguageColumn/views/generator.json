@@ -1,8 +1,7 @@
 {
-    "name": "Add Language Column",
-    "generator": "app\\generators\\addLanguageColumn\\AddLanguageColumnGenerator",
-    "templates": {
-      "default": "default"
-    }
+  "name": "Add Language Column",
+  "generator": "AlexNo\\FieldLingoGii\\AddLanguageColumn\\AddLanguageColumnGenerator",
+  "templates": {
+    "default": "default"
+  }
 }
-  

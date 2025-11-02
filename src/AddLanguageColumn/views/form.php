@@ -4,7 +4,17 @@ use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
 /** @var yii\widgets\ActiveForm $form */
-/** @var app\gii\addLanguageColumn\AddLanguageColumnGenerator $generator */
+/** @var AlexNo\FieldLingoGii\AddLanguageColumn\AddLanguageColumnGenerator $generator */
+
+/*
+ * Register highlight.js (CSS + JS) for SQL preview
+ * Note: we use CDN here; if you prefer local assets, replace the URLs.
+ */
+$this->registerCssFile('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css');
+$this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js', [
+    'position' => \yii\web\View::POS_END,
+    'depends' => [\yii\web\JqueryAsset::class],
+]);
 ?>
 
 <?php if ($generator->hasErrors()): ?>
@@ -20,7 +30,7 @@ use yii\widgets\ActiveForm;
 ]) ?>
 
 <?= $form->field($generator, 'languages')->checkboxList(
-    $generator->availableLanguages,
+    $generator->getAvailableLanguages(),
     [
         'itemOptions' => ['labelOptions' => ['class' => 'checkbox-inline']],
         'separator' => '<br>',
@@ -40,7 +50,7 @@ use yii\widgets\ActiveForm;
 ) ?>
 
 <?php
-$js = <<<JS
+$js = <<<'JS'
 $('form').on('submit', function (e) {
     var checked = $('input[name="AddLanguageColumnGenerator[languages][]"]:checked').length;
     var container = $('input[name="AddLanguageColumnGenerator[languages][]"]').closest('.form-group');

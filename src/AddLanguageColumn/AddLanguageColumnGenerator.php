@@ -1,13 +1,22 @@
 <?php
-
-namespace app\gii\addLanguageColumn;
-
+namespace AlexNo\FieldLingoGii\AddLanguageColumn;
+/**
+ * Class AddLanguageColumnGenerator
+ * Add Language Column Generator for Field-Lingo (Yii2 / Gii)
+ *
+ * This generator creates SQL statements to add new language-localized columns
+ * based on existing localized fields in the database tables.
+ *
+ * @license MIT
+ * @package AlexNo\FieldLingoGii\ExtendedModel
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 use Yii;
 use yii\gii\Generator;
 use yii\db\TableSchema;
 use yii\helpers\ArrayHelper;
 use yii\web\View;
-use app\gii\addLanguageColumn\SqlCodeFile;
 
 class AddLanguageColumnGenerator extends Generator
 {
@@ -30,7 +39,6 @@ class AddLanguageColumnGenerator extends Generator
         parent::init();
         $this->loadAvailableLanguages();
         $this->initSelectedLanguages();
-        $this->registerHighlightJs();
 
         // Ensure that "after_all" is selected by default if position is empty
         if ($this->position === null) {
@@ -54,19 +62,8 @@ class AddLanguageColumnGenerator extends Generator
     private function initSelectedLanguages(): void
     {
         if (empty($this->languages) && Yii::$app->request->isGet) {
-            $this->languages = array_keys($this->availableLanguages);
+            $this->languages = array_keys($this->getAvailableLanguages());
         }
-    }
-
-    // Register Highlight.js for syntax highlighting in the preview
-    private function registerHighlightJs(): void
-    {
-        $view = Yii::$app->view;
-        $view->registerCssFile('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css');
-        $view->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js', [
-            'position' => View::POS_END,
-            'depends' => [\yii\web\JqueryAsset::class],
-        ]);
     }
 
     public function getName(): string
@@ -132,6 +129,11 @@ class AddLanguageColumnGenerator extends Generator
         return $options;
     }
 
+    /**
+     * Generate "files" (SqlCodeFile instances) — Gii will show them as results.
+     *
+     * @return \yii\gii\CodeFile[]
+     */
     public function generate(): array
     {
         if (empty($this->languages)) {
@@ -170,6 +172,12 @@ class AddLanguageColumnGenerator extends Generator
         return $files;
     }
 
+    /**
+     * Find groups of localized fields that match selected base languages.
+     *
+     * @param TableSchema $tableSchema
+     * @return array [ baseName => [col1, col2, ...] ]
+     */
     public function findLocalizedFields(TableSchema $tableSchema): array
     {
         $candidates = [];
@@ -193,6 +201,11 @@ class AddLanguageColumnGenerator extends Generator
         foreach ($candidates as $base => $langs) {
             $langs = array_unique($langs);
             if (count($langs) === $languageCount) {
+                // sort columns by appearance order in table schema (preserve original order)
+                usort($langs, function ($a, $b) use ($tableSchema) {
+                    $keys = array_keys($tableSchema->columns);
+                    return array_search($a, $keys, true) <=> array_search($b, $keys, true);
+                });
                 $validGroups[$base] = $langs;
             }
         }
@@ -200,6 +213,14 @@ class AddLanguageColumnGenerator extends Generator
         return $validGroups;
     }
 
+    /**
+     * Build ALTER TABLE SQL statement based on source column.
+     *
+     * @param TableSchema $table
+     * @param string $baseName
+     * @param array $columns
+     * @return string|null
+     */
     private function generateAlterTableSql(TableSchema $table, $baseName, $columns): ?string
     {
         if (empty($columns)) {
@@ -245,8 +266,13 @@ class AddLanguageColumnGenerator extends Generator
         return "Successfully applied {$applied} changes. Skipped {$skipped} fields.";
     }
 
+    /**
+     * Return the path to custom form view shipped with the package.
+     *
+     * @return string
+     */
     public function formView(): string
     {
-        return '@gii/addLanguageColumn/views/form.php';
+        return '@vendor/alex-no/field-lingo-gii/src/AddLanguageColumn/views/form.php';
     }
 }

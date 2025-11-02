@@ -1,7 +1,19 @@
 <?php
-
-namespace app\gii\addLanguageColumn;
-
+namespace AlexNo\FieldLingoGii\AddLanguageColumn;
+/**
+ * Class SqlCodeFile
+ * SQL Code File for Add Language Column Generator (Yii2 / Gii)
+ * This class represents a SQL code file to add a new language-localized column
+ * based on existing localized fields in the database tables.
+ *
+ * SqlCodeFile — wrapper for SQL "files" in Gii.
+ * It stores table/column metadata and can execute the SQL directly (save()).
+ *
+ * @license MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 use Yii;
 use yii\gii\CodeFile;
 
@@ -30,6 +42,11 @@ class SqlCodeFile extends CodeFile
         $this->operation = $skip ? parent::OP_SKIP : parent::OP_CREATE;
     }
 
+    /**
+     * Execute SQL directly against DB (used by Gii action).
+     *
+     * @return bool
+     */
     public function save(): bool
     {
         if ($this->skip) {
@@ -45,7 +62,12 @@ class SqlCodeFile extends CodeFile
         }
     }
 
-    public function preview()
+    /**
+     * Return HTML preview (with highlight.js class)
+     *
+     * @return string
+     */
+    public function preview(): string
     {
         $escapedSql = htmlspecialchars($this->content, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         return <<<HTML
@@ -60,6 +82,10 @@ if (typeof hljs !== 'undefined') {
 HTML;
     }
 
+    /**
+     * Return relative path description for Gii UI.
+     * @return string
+     */
     public function getRelativePath()
     {
         return "Table {$this->tableName} — Add column {$this->columnName}";

@@ -1,6 +1,6 @@
 <?php
 /** @var yii\web\View $this */
-/** @var app\generators\addLanguageColumn\AddLanguageColumnGenerator $generator */
+/** @var AlexNo\FieldLingoGii\AddLanguageColumn\AddLanguageColumnGenerator $generator */
 ?>
 
 <h2>Operation Summary</h2>
@@ -9,7 +9,7 @@
     <h3>Executed SQL:</h3>
     <ul>
         <?php foreach ($generator->executedSql as $sql): ?>
-            <li><code><?= htmlspecialchars($sql) ?></code></li>
+            <li><code><?= htmlspecialchars($sql, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></code></li>
         <?php endforeach; ?>
     </ul>
 <?php else: ?>
@@ -20,7 +20,7 @@
     <h3>Skipped Fields (already existed):</h3>
     <ul>
         <?php foreach ($generator->skippedFields as $field): ?>
-            <li><code><?= htmlspecialchars($field) ?></code></li>
+            <li><code><?= htmlspecialchars($field, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></code></li>
         <?php endforeach; ?>
     </ul>
 <?php endif; ?>
