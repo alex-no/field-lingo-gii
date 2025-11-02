@@ -2,11 +2,11 @@
 
 [![Packagist Version](https://img.shields.io/packagist/v/alex-no/field-lingo-gii.svg)](https://packagist.org/packages/alex-no/field-lingo-gii)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![PHP](https://img.shields.io/packagist/php-v/alex-no/field-lingo-gii.svg)](https://www.php.net/)
+[![PHP Version](https://img.shields.io/packagist/php-v/alex-no/field-lingo-gii)](https://www.php.net/)
 [![Downloads](https://img.shields.io/packagist/dt/alex-no/field-lingo-gii.svg)](https://packagist.org/packages/alex-no/field-lingo-gii)
 
 > A set of Gii tools for **Field-Lingo** (Yii2):  
-> - **Extended Model Generator** — generates parent + child model classes wired to `LingoActiveRecord` / `LingoActiveQuery`.  
+> - **Extended Model Generator** — generates parent + child model classes wired to `AlexNo\FieldLingo\Adapters\Yii2\LingoActiveRecord` / `AlexNo\FieldLingo\Adapters\Yii2\LingoActiveQuery`.  
 > - **Add Language Generator** — helps produce SQL-scripts to bulk-add language-suffixed fields (e.g. `name_en`, `name_uk`) across tables.
 
 ---
@@ -15,7 +15,7 @@
 
 Field-Lingo stores localized columns directly in DB (e.g. `title_en`, `title_uk`, ...). These Gii tools help automate two repetitive tasks:
 
-1. Generate models that extend `AlexNo\FieldLingo\Adapters\Yii2\LingoActiveRecord` and use `LingoActiveQuery`.
+1. Generate models that extend `AlexNo\FieldLingo\Adapters\Yii2\LingoActiveRecord` and use `AlexNo\FieldLingo\Adapters\Yii2\LingoActiveQuery`.
 2. Generate SQL-scripts to add a language (set of `_xx` fields) across many tables.
 
 ---
@@ -42,7 +42,7 @@ In your Yii2 config/web.php (or config/main.php) register generators for the Gii
         'class' => \yii\gii\Module::class,
         'generators' => [
             'field-lingo-extended-model' => [
-                'class' => \AlexNo\FieldLingoGii\Gii\ExtendedModelGenerator::class,
+                'class' => \AlexNo\FieldLingoGii\ExtendedModel\ExtendedModelGenerator::class,
                 'templates' => [
                     'extended' => '@vendor/alex-no/field-lingo-gii/templates/extended',
                 ],
@@ -56,9 +56,9 @@ In your Yii2 config/web.php (or config/main.php) register generators for the Gii
                 ],
             ],
             'field-lingo-add-language' => [
-                'class' => \AlexNo\FieldLingoGii\Gii\AddLanguageGenerator::class,
+                'class' => \AlexNo\FieldLingoGii\AddLanguageColumn\AddLanguageGenerator::class,
                 'templates' => [
-                    'default' => '@vendor/alex-no/field-lingo-gii/templates/add-language',
+                    'default' => '@vendor/alex-no/field-lingo-gii/src/AddLanguageColumn/templates/default/',
                 ],
             ],
         ],
@@ -75,7 +75,7 @@ After registering with Gii, two new generators will appear:
 
 ## ✨ Extended Model Generator — what it does
  - Generates models/base/YourModel.php — main (regenerated) logic;
- - Generates models/YourModel.php — empty child class for custom logic;;
+ - Generates models/YourModel.php — empty child class for custom logic;
  - Optionally generates models/YourModelQuery.php (using LingoActiveQuery when chosen).
 
 ---
