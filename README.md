@@ -56,7 +56,7 @@ In your Yii2 config/web.php (or config/main.php) register generators for the Gii
                 ],
             ],
             'field-lingo-add-language' => [
-                'class' => \AlexNo\FieldLingoGii\AddLanguageColumn\AddLanguageGenerator::class,
+                'class' => \AlexNo\FieldLingoGii\AddLanguageColumn\AddLanguageColumnGenerator::class,
                 'templates' => [
                     'default' => '@vendor/alex-no/field-lingo-gii/src/AddLanguageColumn/templates/default/',
                 ],
