@@ -13,7 +13,7 @@
 
 $baseClassArr = explode('\\', $generator->baseClass);
 $queryBaseClassArr = explode('\\', $generator->queryBaseClass);
-$isAdvActiveQuery = end($queryBaseClassArr) === 'AdvActiveQuery';
+$isLingoActiveQuery = end($queryBaseClassArr) === 'LingoActiveQuery';
 
 echo "<?php\n";
 ?>
@@ -22,7 +22,7 @@ namespace <?= $generator->ns ?>\base;
 
 use Yii;
 use <?= $generator->baseClass ?>;
-<?= $isAdvActiveQuery ? 'use ' . $generator->queryBaseClass . ';' : '' ?>
+<?= $isLingoActiveQuery ? 'use ' . $generator->queryBaseClass . ';' : '' ?>
 
 
 /**
@@ -41,7 +41,7 @@ class <?= $className ?> extends <?= end($baseClassArr) . "\n" ?>
     {
         return '{{%<?= $tableName ?>}}';
     }
-<?php if ($isAdvActiveQuery): ?>
+<?php if ($isLingoActiveQuery): ?>
 
     /**
      * {@inheritdoc}
