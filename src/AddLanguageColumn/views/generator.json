@@ -5,3 +5,10 @@
     "default": "default"
   }
 }
+{
+  "name": "Add Language Column",
+  "generator": "AlexNo\\FieldLingoGii\\AddLanguageColumn\\AddLanguageColumnGenerator",
+  "templates": {
+    "default": "default"
+  }
+}

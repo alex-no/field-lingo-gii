@@ -1,64 +1,95 @@
 <?php
+declare(strict_types=1);
+
 namespace AlexNo\FieldLingoGii\AddLanguageColumn;
-/**
- * Class AddLanguageColumnGenerator
- * Add Language Column Generator for Field-Lingo (Yii2 / Gii)
- *
- * This generator creates SQL statements to add new language-localized columns
- * based on existing localized fields in the database tables.
- *
- * @license MIT
- * @package AlexNo\FieldLingoGii\ExtendedModel
- * @author Oleksandr Nosov <alex@4n.com.ua>
- * @copyright 2025 Oleksandr Nosov
- */
+
 use Yii;
 use yii\gii\Generator;
 use yii\db\TableSchema;
 use yii\helpers\ArrayHelper;
-use yii\web\View;
+use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\AdapterInterface;
+use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\DirectSql\DirectSqlAdapter;
+use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\Migration\MigrationAdapter;
 
+/**
+ * Class AddLanguageColumnGenerator
+ *
+ * Generator for adding language-specific columns (field_{lang}) to tables.
+ * Delegates output to adapters (direct SQL / migration).
+ *
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ */
 class AddLanguageColumnGenerator extends Generator
 {
-    // Constants for insert position
-    public const POSITION_BEFORE_ALL = 'before_all';
-    public const POSITION_AFTER_ALL  = 'after_all';
-
-    // Form inputs
+    /**
+     * Form inputs
+     */
     public string $newLanguageSuffix = '';
     public array $languages = [];
-    public ?string $position = null; // Position to insert the new field (before/after existing localized fields)
+    public ?string $position = null;
 
-    // Internal state
-    private array $_availableLanguages = []; // ALL available languages (retrieved from the database)
+    /**
+     * @var ApplyMode Selected apply mode (migration/direct sql)
+     */
+    public ?ApplyMode $applyMode = null;
+
+    /**
+     * Internal state
+     */
+    private array $_availableLanguages = [];
     public array $executedSql = [];
     public array $skippedFields = [];
+    public array $generatedMigrations = [];
 
+    /**
+     * Initialize generator defaults.
+     *
+     * @return void
+     */
     public function init(): void
     {
         parent::init();
+
         $this->loadAvailableLanguages();
         $this->initSelectedLanguages();
 
-        // Ensure that "after_all" is selected by default if position is empty
         if ($this->position === null) {
-            $this->position = self::POSITION_AFTER_ALL;
+            $this->position = 'after_all';
         }
 
         $this->newLanguageSuffix = strtolower($this->newLanguageSuffix);
+
+        // default apply mode — migration
+        $this->applyMode ??= ApplyMode::MIGRATION;
     }
 
-    // Populate available languages (from the database)
+    /**
+     * Load available languages from DB.
+     *
+     * @return void
+     */
     private function loadAvailableLanguages(): void
     {
+        try {
+            $rows = Yii::$app->db
+                ->createCommand('SELECT `code`, `full_name` FROM `language` WHERE `is_enabled` = 1 ORDER BY `order`')
+                ->queryAll();
+        } catch (\Throwable $e) {
+            $rows = [];
+        }
+
         $this->_availableLanguages = ArrayHelper::map(
-            Yii::$app->db->createCommand('SELECT `code`, `full_name` FROM `language` WHERE `is_enabled` = 1 ORDER BY `order`')->queryAll(),
+            $rows,
             'code',
-            fn($row) => "{$row['code']} ({$row['full_name']})"
+            static fn($row) => "{$row['code']} ({$row['full_name']})"
         );
     }
 
-    // If the list of languages is not yet filled (e.g., when the form is opened for the first time) — set all available
+    /**
+     * If languages aren't set yet (GET form), preselect all available.
+     *
+     * @return void
+     */
     private function initSelectedLanguages(): void
     {
         if (empty($this->languages) && Yii::$app->request->isGet) {
@@ -66,16 +97,25 @@ class AddLanguageColumnGenerator extends Generator
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getName(): string
     {
         return 'Add Language Column Generator';
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getDescription(): string
     {
-        return 'Generates SQL statements to add missing language-localized columns.';
+        return 'Generates either SQL statements or migration classes to add missing language-localized columns.';
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function rules(): array
     {
         return array_merge(parent::rules(), [
@@ -83,9 +123,18 @@ class AddLanguageColumnGenerator extends Generator
             ['newLanguageSuffix', 'match', 'pattern' => '/^[a-z]{2}$/i', 'message' => 'Language suffix must be 2 letters.'],
             ['languages', 'each', 'rule' => ['string']],
             ['languages', 'validateLanguagesNotEmpty'],
+            ['applyModeValue', 'required'],
+            ['applyModeValue', 'in', 'range' => [ApplyMode::DIRECT_SQL->value, ApplyMode::MIGRATION->value]],
         ]);
     }
 
+    /**
+     * Validate that languages array is not empty.
+     *
+     * @param string $attribute
+     * @param mixed $params
+     * @return void
+     */
     public function validateLanguagesNotEmpty($attribute, $params): void
     {
         if (empty($this->$attribute)) {
@@ -93,44 +142,81 @@ class AddLanguageColumnGenerator extends Generator
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function attributeLabels(): array
     {
         return [
             'newLanguageSuffix' => 'New Language Suffix (e.g., fr)',
             'languages' => 'Base Languages',
             'position' => 'Position to Insert',
+            'applyModeValue' => 'How to add fields',
         ];
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function hints(): array
     {
         return [
             'newLanguageSuffix' => 'Two-letter code for the new language (lowercase or uppercase).',
             'languages' => 'Select which existing languages to consider when finding fields.',
             'position' => 'Choose where to insert the new field among existing localized fields.',
+            'applyModeValue' => 'Direct SQL executes immediately. Creating migration generates PHP migration files to run later (recommended).',
         ];
     }
 
+    /**
+     * Return available languages for the form.
+     *
+     * @return array
+     */
     public function getAvailableLanguages(): array
     {
         return $this->_availableLanguages;
     }
 
+    /**
+     * Options for position drop-down.
+     *
+     * @return array
+     */
     public function getPositionOptions(): array
     {
         $options = [
-            self::POSITION_BEFORE_ALL => 'Before all',
+            'before_all' => 'Before all',
         ];
         foreach ($this->languages as $lang) {
             $options[$lang] = "After fields ending with _{$lang}";
         }
-        $options[self::POSITION_AFTER_ALL] = 'After all';
+        $options['after_all'] = 'After all';
 
         return $options;
     }
 
     /**
-     * Generate "files" (SqlCodeFile instances) — Gii will show them as results.
+     * Factory: create adapter instance according to selected apply mode.
+     *
+     * @return AdapterInterface
+     */
+    private function createAdapter(): AdapterInterface
+    {
+        $options = [
+            'position' => $this->position,
+        ];
+
+        return match ($this->applyMode) {
+            ApplyMode::DIRECT_SQL => new DirectSqlAdapter($options),
+            default => new MigrationAdapter($options),
+        };
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * Delegates generation of CodeFile objects to adapters.
      *
      * @return \yii\gii\CodeFile[]
      */
@@ -144,26 +230,45 @@ class AddLanguageColumnGenerator extends Generator
         $schemas = ArrayHelper::index($db->schema->getTableSchemas(), 'name');
         $files = [];
 
+        $adapter = $this->createAdapter();
+
         foreach ($schemas as $table) {
             $localizedFields = $this->findLocalizedFields($table);
 
             foreach ($localizedFields as $baseName => $columns) {
-                $sql = $this->generateAlterTableSql($table, $baseName, $columns);
-                if ($sql !== null) {
-                    $columnName = $baseName . '_' . $this->newLanguageSuffix;
-                    $skip = array_key_exists($columnName, $table->columns);
+                $newColumn = "{$baseName}_{$this->newLanguageSuffix}";
 
-                    $files[] = new SqlCodeFile(
-                        $table->name,
-                        $columnName,
-                        $sql,
-                        $skip
-                    );
+                // If exists — skip and record
+                if (array_key_exists($newColumn, $table->columns)) {
+                    $this->skippedFields[] = "{$table->name}.{$newColumn}";
+                    continue;
+                }
 
-                    if ($skip) {
-                        $this->skippedFields[] = "{$table->name}.{$columnName}";
-                    } else {
-                        $this->executedSql[] = $sql;
+                // Adapter returns array of CodeFile instances (one or more)
+                /** @var \yii\gii\CodeFile[] $generatedFiles */
+                $generatedFiles = $adapter->generateFor($table, $baseName, $columns, $this->newLanguageSuffix, [
+                    'position' => $this->position,
+                ]);
+
+                foreach ($generatedFiles as $file) {
+                    $files[] = $file;
+
+                    // bookkeeping
+                    // For direct sql: record executed SQL (content) if file not skipped
+                    if ($this->applyMode === ApplyMode::DIRECT_SQL && $file instanceof \yii\gii\CodeFile) {
+                        // CodeFile exposes $content and $path publicly in Yii2
+                        $content = $file->content ?? null;
+                        if ($content !== null) {
+                            $this->executedSql[] = $content;
+                        }
+                    }
+
+                    // For migrations: record filename
+                    if ($this->applyMode === ApplyMode::MIGRATION && $file instanceof \yii\gii\CodeFile) {
+                        $path = $file->path ?? null;
+                        if ($path !== null) {
+                            $this->generatedMigrations[] = basename($path);
+                        }
                     }
                 }
             }
@@ -176,7 +281,7 @@ class AddLanguageColumnGenerator extends Generator
      * Find groups of localized fields that match selected base languages.
      *
      * @param TableSchema $tableSchema
-     * @return array [ baseName => [col1, col2, ...] ]
+     * @return array<string, string[]> [ baseName => [col1, col2, ...] ]
      */
     public function findLocalizedFields(TableSchema $tableSchema): array
     {
@@ -202,7 +307,7 @@ class AddLanguageColumnGenerator extends Generator
             $langs = array_unique($langs);
             if (count($langs) === $languageCount) {
                 // sort columns by appearance order in table schema (preserve original order)
-                usort($langs, function ($a, $b) use ($tableSchema) {
+                usort($langs, function (string $a, string $b) use ($tableSchema): int {
                     $keys = array_keys($tableSchema->columns);
                     return array_search($a, $keys, true) <=> array_search($b, $keys, true);
                 });
@@ -214,65 +319,46 @@ class AddLanguageColumnGenerator extends Generator
     }
 
     /**
-     * Build ALTER TABLE SQL statement based on source column.
+     * Success message shown after generation in Gii UI.
      *
-     * @param TableSchema $table
-     * @param string $baseName
-     * @param array $columns
-     * @return string|null
+     * @return string
      */
-    private function generateAlterTableSql(TableSchema $table, $baseName, $columns): ?string
-    {
-        if (empty($columns)) {
-            return null;
-        }
-
-        $positionClause = '';
-
-        if ($this->position === self::POSITION_BEFORE_ALL) {
-            $allNames = array_keys($table->columns);
-            $idx = array_search($columns[0], $allNames, true);
-            $sourceName = $allNames[$idx];
-            if ($idx > 0) {
-                $positionClause = " AFTER `{$allNames[$idx - 1]}`";
-            } else {
-                $positionClause = ' FIRST';
-            }
-        } else {
-            $sourceName = $this->position === self::POSITION_AFTER_ALL ? $columns[array_key_last($columns)] : "{$baseName}_{$this->position}";
-            $positionClause = " AFTER `{$sourceName}`";
-        }
-        if (!isset($table->columns[$sourceName])) {
-            return null;
-        }
-
-        $source = $table->columns[$sourceName];
-
-        return sprintf(
-            'ALTER TABLE `%s` ADD COLUMN `%s` %s %s%s;',
-            $table->name,
-            "{$baseName}_{$this->newLanguageSuffix}",
-            $source->dbType,
-            $source->allowNull ? 'NULL' : 'NOT NULL',
-            $positionClause
-        );
-    }
-
     public function successMessage(): string
     {
-        $applied = count($this->executedSql);
         $skipped = count($this->skippedFields);
 
-        return "Successfully applied {$applied} changes. Skipped {$skipped} fields.";
+        if ($this->applyMode === ApplyMode::MIGRATION) {
+            $migs = count($this->generatedMigrations);
+            return "Generated {$migs} migration(s). Skipped {$skipped} fields (already existed).";
+        }
+
+        $applied = count($this->executedSql);
+        return "Successfully prepared {$applied} SQL statement(s). Skipped {$skipped} fields.";
     }
 
     /**
-     * Return the path to custom form view shipped with the package.
+     * Path to custom form view.
      *
      * @return string
      */
     public function formView(): string
     {
         return '@vendor/alex-no/field-lingo-gii/src/AddLanguageColumn/views/form.php';
+    }
+
+    /**
+     * Returns the enum string value for the form
+     */
+    public function getApplyModeValue(): string
+    {
+        return $this->applyMode->value;
+    }
+
+    /**
+     * Sets the enum to a string from the form
+     */
+    public function setApplyModeValue(string $value): void
+    {
+        $this->applyMode = ApplyMode::from($value);
     }
 }

@@ -1,6 +1,7 @@
 <?php
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
+use \AlexNo\FieldLingoGii\AddLanguageColumn\ApplyMode;
 
 /** @var yii\web\View $this */
 /** @var yii\widgets\ActiveForm $form */
@@ -15,6 +16,12 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.
     'position' => \yii\web\View::POS_END,
     'depends' => [\yii\web\JqueryAsset::class],
 ]);
+
+// Apply mode options for radioList
+$applyModeOptions = [
+    ApplyMode::MIGRATION->value   => ApplyMode::MIGRATION->label(),
+    ApplyMode::DIRECT_SQL->value => ApplyMode::DIRECT_SQL->label(),
+];
 ?>
 
 <?php if ($generator->hasErrors()): ?>
@@ -48,6 +55,8 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.
         'required' => true
     ]
 ) ?>
+
+<?= $form->field($generator, 'applyModeValue')->radioList($applyModeOptions) ?>
 
 <?php
 $js = <<<'JS'
