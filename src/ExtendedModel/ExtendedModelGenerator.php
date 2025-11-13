@@ -185,18 +185,26 @@ class ExtendedModelGenerator extends Generator
     {
         $loaded = parent::load($data, $formName);
 
-        if ($loaded && !empty($this->modelClass)) {
-            if (empty($this->baseClass) || !class_exists($this->baseClass)) {
-                // Check if the generated file exists in models/base
-                $basePath = Yii::getAlias('@app/models/base/' . str_replace('\\', '/', $this->modelClass)) . '.php';
-                if (is_file($basePath)) {
-                    $content = file_get_contents($basePath);
-                    if (preg_match('/class\s+\w+\s+extends\s+([\\\\\w]+)/', $content, $matches)) {
-                        $this->baseClass = $matches[1];
+        if ($loaded && isset($this->modelClass) && $this->modelClass !== '') {
+            // look for existing base class file in app/models/base/<Model>.php
+            $path = Yii::getAlias('@app/models/base/' . str_replace('\\', '/', $this->modelClass)) . '.php';
+            if (is_file($path)) {
+                $content = file_get_contents($path);
+
+                // Find baseClass by "extends"
+                if (preg_match('/class\s+\w+\s+extends\s+([\\\\\w]+)/', $content, $matches)) {
+                    $this->baseClass = $matches[1];
+                }
+
+                // If queryClass is set, try to detect queryBaseClass
+                if ($this->queryClass !== '') {
+                    $queryPath = Yii::getAlias('@app/models/base/' . str_replace('\\', '/', $this->queryClass)) . '.php';
+                    if (is_file($queryPath)) {
+                        $queryContent = file_get_contents($queryPath);
+                        if (preg_match('/public\s+static\s+function\s+find\s*\(\)\s*:\s*([\\\\\w]+)/', $queryContent, $matches)) {
+                            $this->queryBaseClass = $matches[1];
+                        }
                     }
-                } else {
-                    // default
-                    $this->baseClass = 'yii\db\ActiveRecord';
                 }
             }
         }

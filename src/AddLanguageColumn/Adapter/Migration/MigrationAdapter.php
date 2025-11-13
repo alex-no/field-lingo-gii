@@ -16,6 +16,23 @@ use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\AdapterInterface;
 final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
 {
     /**
+     * Get deterministic timestamp for current generation session.
+     * Stores timestamp in session to ensure same timestamp between Preview and Generate requests.
+     * Session key includes table and column to allow parallel generations.
+     */
+    private function getSessionTimestamp(string $table, string $column): int
+    {
+        $sessionKey = 'migration_ts_' . md5($table . $column);
+        $session = Yii::$app->session;
+
+        if (!$session->has($sessionKey)) {
+            $session->set($sessionKey, time());
+        }
+
+        return (int)$session->get($sessionKey);
+    }
+
+    /**
      * @inheritDoc
      */
     public function generateFor(TableSchema $table, string $baseName, array $columns, string $newLanguageSuffix, array $options = []): array
@@ -35,8 +52,8 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
 
         $source = $table->columns[$sourceName];
 
-        // timestamp for filename and class name uniqueness
-        $ts = time();
+        // Use session-based timestamp to ensure same timestamp for Preview and Generate
+        $ts = $this->getSessionTimestamp($table->name, $newColumn);
         $className = $this->buildMigrationClassName($table->name, $newColumn, $ts);
         $fileName = "m" . date('ymd_His', $ts) . "_add_{$newColumn}_to_{$table->name}.php";
 

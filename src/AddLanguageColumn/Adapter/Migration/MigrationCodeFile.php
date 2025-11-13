@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\Migration;
 
+use Yii;
 use yii\gii\CodeFile;
 
 /**
@@ -14,10 +15,20 @@ final class MigrationCodeFile extends CodeFile
 
     public function __construct(string $fileName, string $content, string $className)
     {
-        parent::__construct('@app/migrations/' . $fileName, $content);
-
         $this->className = $className;
-        $this->operation = parent::OP_CREATE;
+
+        // CRITICAL: resolve alias BEFORE calling parent constructor
+        // Base CodeFile uses $this->path for:
+        // 1. Computing $this->id = md5($this->path)
+        // 2. Checking file existence via is_file($this->path)
+        // 3. Determining operation (CREATE/OVERWRITE/SKIP)
+        $migrationsPath = Yii::getAlias('@app/migrations');
+        $fullPath = $migrationsPath . DIRECTORY_SEPARATOR . $fileName;
+
+        // Parent will correctly set all properties based on real path
+        parent::__construct($fullPath, $content);
+
+        // Do NOT override operation - parent already set it correctly
     }
 
     public function preview(): string
@@ -45,6 +56,7 @@ HTML;
 
     public function getRelativePath(): string
     {
-        return "Migration — {$this->className}.php";
+        // We show a beautiful name in UI Gii
+        return "migrations/{$this->className}.php";
     }
 }
