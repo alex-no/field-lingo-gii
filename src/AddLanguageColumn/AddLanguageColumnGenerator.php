@@ -31,6 +31,14 @@ class AddLanguageColumnGenerator extends Generator
     public ?string $position = null;
 
     /**
+     * Where to write generated migrations. Can be an alias (e.g. migrations) or absolute path.
+     * If empty — defaults to 'migrations'.
+     *
+     * @var string
+     */
+    public string $migrationPath = 'migrations';
+
+    /**
      * @var ApplyMode Selected apply mode (migration/direct sql)
      */
     public ?ApplyMode $applyMode = null;
@@ -207,6 +215,7 @@ class AddLanguageColumnGenerator extends Generator
     {
         $options = [
             'position' => $this->position,
+            'migrationPath' => $this->migrationPath,
         ];
 
         return match ($this->applyMode) {

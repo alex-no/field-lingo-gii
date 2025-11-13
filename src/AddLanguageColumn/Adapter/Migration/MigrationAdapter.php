@@ -73,7 +73,8 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
 
         $migrationContent = $this->buildMigrationContent($table, $baseName, $columns, $newColumn, $className);
 
-        $file = new MigrationCodeFile($fileName, $migrationContent, $className);
+        $migrationsPath = $this->options['migrationPath'] ?? 'migrations';
+        $file = new MigrationCodeFile($fileName, $migrationContent, $className, $migrationsPath);
 
         return [$file];
     }
@@ -112,26 +113,26 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
         $source = $table->columns[$sourceName];
 
         $dbTypeHint = $this->normalizeDbTypeForMigration($source->dbType ?? null);
-
         $tableName = $table->name;
-        $positionComment = '';
 
-        // MySQL-specific position snippet for user convenience
+        $position = $this->options['position'] ?? 'after_all';
+
+        // MySQL: execute precise ADD COLUMN with positioning
         if (Yii::$app->db->driverName === 'mysql') {
-            $pos = $this->options['position'] ?? 'after_all';
-            if ($pos === 'before_all') {
-                $allNames = array_keys($table->columns);
-                $idx = array_search($columns[0], $allNames, true);
-                if ($idx !== false && $idx > 0) {
-                    $after = $allNames[$idx - 1];
-                    $positionComment = "ALTER TABLE `{$tableName}` MODIFY COLUMN `{$newColumnName}` {$source->dbType} " . ($source->allowNull ? 'NULL' : 'NOT NULL') . " AFTER `{$after}`;";
-                } else {
-                    $positionComment = "ALTER TABLE `{$tableName}` MODIFY COLUMN `{$newColumnName}` {$source->dbType} " . ($source->allowNull ? 'NULL' : 'NOT NULL') . " FIRST;";
-                }
-            } else {
-                $after = $columns[array_key_last($columns)];
-                $positionComment = "ALTER TABLE `{$tableName}` MODIFY COLUMN `{$newColumnName}` {$source->dbType} " . ($source->allowNull ? 'NULL' : 'NOT NULL') . " AFTER `{$after}`;";
-            }
+            $positionSql = $this->buildAddColumnPositionedSql(
+                $table,
+                $baseName,
+                $newColumnName,
+                $columns,
+                $position,
+                $source->dbType ?? 'VARCHAR(255)',
+                $source->allowNull ?? true
+            );
+
+            $safeUp = "\$this->execute(\"{$positionSql}\");";
+        } else {
+            // fallback for other DBs
+            $safeUp = "\$this->addColumn('{$tableName}', '{$newColumnName}', \$this->string());";
         }
 
         // produce migration class content (conservative, user can edit for exact types/positions)
@@ -151,9 +152,7 @@ final class {$className} extends Migration
     {
         // Column hint (derived from existing column): {$dbTypeHint}
         // Adjust the expression below if you want an exact migration expression like \$this->string(255)->notNull()
-        \$this->addColumn('{$tableName}', '{$newColumnName}', \$this->string());
-        // If you need the column to be placed in a specific position (MySQL), you can run the following SQL:
-        // {$positionComment}
+        {$safeUp}
     }
 
     public function safeDown(): void
@@ -167,4 +166,37 @@ PHP;
 
         return $class;
     }
+
+    /**
+     * Build MySQL ADD COLUMN SQL with proper positioning based on options.
+     *
+     * @param TableSchema $table
+     * @param string $newColumnName
+     * @param array $columns
+     * @param string $position 'before_all', 'after_all', or column name
+     * @param string $dbType
+     * @param bool $allowNull
+     * @return string
+     */
+    private function buildAddColumnPositionedSql(
+        TableSchema $table,
+        string $baseName,
+        string $newColumnName,
+        array $columns,
+        string $position,
+        string $dbType = 'VARCHAR(255)',
+        bool $allowNull = true
+    ): string {
+        $tableName = $table->name;
+
+        if ($position === 'before_all') {
+            return "ALTER TABLE `{$tableName}` ADD COLUMN `{$newColumnName}` {$dbType} "
+                 . ($allowNull ? 'NULL' : 'NOT NULL') . " FIRST;";
+        }
+
+        $after = $position === 'after_all' ? $columns[array_key_last($columns)] : $position;
+        return "ALTER TABLE `{$tableName}` ADD COLUMN `{$newColumnName}` {$dbType} "
+             . ($allowNull ? 'NULL' : 'NOT NULL') . " AFTER `{$baseName}_{$after}`;";
+    }
+
 }

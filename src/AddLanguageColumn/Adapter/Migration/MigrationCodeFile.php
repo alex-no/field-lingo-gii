@@ -18,6 +18,12 @@ use yii\gii\CodeFile;
 final class MigrationCodeFile extends CodeFile
 {
     /**
+     * Path to migrations directory (relative to project root).
+     * @var string
+     */
+    private string $migrationPath;
+
+    /**
      * Constructor.
      *
      * CRITICAL: resolve alias BEFORE calling parent constructor
@@ -31,15 +37,16 @@ final class MigrationCodeFile extends CodeFile
      * @param string $fileName
      * @param string $content
      * @param string $className
+     * @param string|null $migrationPath Optional path to migrations directory.
+     *                                    If null or empty — 'migrations' will be used.
      */
-    public function __construct(string $fileName, string $content, public string $className)
+    public function __construct(string $fileName, string $content, public string $className, ?string $migrationPath = null)
     {
-        $this->className = $className;
+        // resolve migrations path (path from root of the project to migrations directory)
+        $this->migrationPath = $migrationPath ?: 'migrations';
 
-        $migrationsPath = Yii::getAlias('@app/migrations');
-        $fullPath = $migrationsPath . DIRECTORY_SEPARATOR . $fileName;
-
-        // Parent will correctly set all properties based on real path
+        // Parent expects a path (real or intended) — parent will check file existence using that path
+        $fullPath = Yii::getAlias('@app/') . $this->getRelativePath();
         parent::__construct($fullPath, $content);
     }
 
@@ -89,6 +96,7 @@ HTML;
     public function getRelativePath(): string
     {
         // We show a beautiful name in UI Gii
-        return "migrations/{$this->className}.php";
+        return "{$this->migrationPath}/{$this->className}.php";
     }
+
 }
