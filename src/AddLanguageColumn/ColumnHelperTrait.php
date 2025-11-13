@@ -2,10 +2,16 @@
 declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn;
-
 /**
+ * ColumnHelperTrait
+ * Provides helper methods for column type normalization.
  * Small utility trait for working with column dbType -> migration expression.
  * The implementation is intentionally conservative; extend later if needed.
+ *
+ * @license https://opensource.org/licenses/MIT MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
  */
 trait ColumnHelperTrait
 {

@@ -2,7 +2,17 @@
 declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn;
-
+/**
+ * Class AddLanguageColumnGenerator
+ *
+ * Generator for adding language-specific columns (field_{lang}) to tables.
+ * Delegates output to adapters (direct SQL / migration).
+ *
+ * @license https://opensource.org/licenses/MIT MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 use Yii;
 use yii\gii\Generator;
 use yii\db\TableSchema;
@@ -11,14 +21,6 @@ use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\AdapterInterface;
 use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\DirectSql\DirectSqlAdapter;
 use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\Migration\MigrationAdapter;
 
-/**
- * Class AddLanguageColumnGenerator
- *
- * Generator for adding language-specific columns (field_{lang}) to tables.
- * Delegates output to adapters (direct SQL / migration).
- *
- * @package AlexNo\FieldLingoGii\AddLanguageColumn
- */
 class AddLanguageColumnGenerator extends Generator
 {
     /**

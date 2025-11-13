@@ -2,7 +2,18 @@
 declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn;
-
+/**
+ * ApplyMode
+ *
+ * Defines modes for applying new language columns.
+ * - DIRECT_SQL: Execute SQL directly on the database.
+ * - MIGRATION: Generate a migration file to be applied later.
+ *
+ * @license https://opensource.org/licenses/MIT MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 enum ApplyMode: string
 {
     case DIRECT_SQL = 'direct_sql';

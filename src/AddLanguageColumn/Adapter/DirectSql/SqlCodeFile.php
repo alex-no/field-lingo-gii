@@ -2,19 +2,43 @@
 declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\DirectSql;
-
+/**
+ * SqlCodeFile — wrapper for SQL "files" in Gii, used by DirectSqlAdapter.
+ *
+ * @license https://opensource.org/licenses/MIT MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 use Yii;
 use yii\gii\CodeFile;
 
-/**
- * SqlCodeFile — wrapper for SQL "files" in Gii, used by DirectSqlAdapter.
- */
 final class SqlCodeFile extends CodeFile
 {
+    /**
+     * Table name for which the SQL is generated.
+     * @var string
+     */
     public string $tableName;
+    /**
+     * Column name to be added.
+     * @var string
+     */
     public string $columnName;
+    /**
+     * Whether to skip execution of this SQL.
+     * @var bool
+     */
     public bool $skip;
 
+    /**
+     * Constructor.
+     *
+     * @param string $tableName
+     * @param string $columnName
+     * @param string $content
+     * @param bool $skip
+     */
     public function __construct(string $tableName, string $columnName, string $content, bool $skip = false)
     {
         // use runtime path so Gii can preview; actual execution uses content
@@ -28,6 +52,8 @@ final class SqlCodeFile extends CodeFile
 
     /**
      * Execute SQL directly against DB (used by Gii action "Save" if user chooses).
+     * @return bool whether the execution was successful
+     * @see CodeFile::save()
      */
     public function save(): bool
     {
@@ -44,6 +70,11 @@ final class SqlCodeFile extends CodeFile
         }
     }
 
+    /**
+     * Returns a preview of the SQL code file with syntax highlighting.
+     * @return string HTML content with syntax-highlighted SQL
+     * @see https://highlightjs.org/usage/
+     */
     public function preview(): string
     {
         $escapedSql = htmlspecialchars($this->content, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -59,17 +90,30 @@ HTML;
 
     /**
      * Public getter for content (convenience).
+     * Returns the content of the code file.
+     * @return string the content of the code file
+     * @see CodeFile::content
      */
     public function getContent(): string
     {
         return $this->content;
     }
 
+    /**
+     * Returns the file name of the code file.
+     * @return string the file name of the code file
+     * @see CodeFile::path
+     */
     public function getFileName(): string
     {
         return basename($this->path);
     }
 
+    /**
+     * Returns the relative path of the code file for display purposes.
+     * @return string the relative path of the code file
+     * @see CodeFile::getRelativePath()
+     */
     public function getRelativePath(): string
     {
         return "Table {$this->tableName} — Add column {$this->columnName}";

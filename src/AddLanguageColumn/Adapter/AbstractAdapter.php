@@ -2,12 +2,25 @@
 declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn\Adapter;
-
+/**
+ * AbstractAdapter
+ *
+ * Base class for adapters that generate code files for adding language-specific columns.
+ *
+ * @license https://opensource.org/licenses/MIT MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 use AlexNo\FieldLingoGii\AddLanguageColumn\ColumnHelperTrait;
 use yii\db\TableSchema;
 
 abstract class AbstractAdapter implements AdapterInterface
 {
+    /**
+     * Include column helper methods.
+     * @see ColumnHelperTrait
+     */
     use ColumnHelperTrait;
 
     /**

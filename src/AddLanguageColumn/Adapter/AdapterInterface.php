@@ -2,7 +2,16 @@
 declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn\Adapter;
-
+/**
+ * AdapterInterface
+ *
+ * Interface for adapters that generate code files for adding language-specific columns.
+ *
+ * @license https://opensource.org/licenses/MIT MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 use yii\gii\CodeFile;
 use yii\db\TableSchema;
 

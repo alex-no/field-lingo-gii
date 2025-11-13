@@ -2,7 +2,15 @@
 declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\Migration;
-
+/**
+ * MigrationAdapter
+ * Generates migration CodeFile(s) that add new language-localized columns.
+ *
+ * @license https://opensource.org/licenses/MIT MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 use Yii;
 use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\AbstractAdapter;
 use yii\db\TableSchema;
@@ -16,9 +24,15 @@ use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\AdapterInterface;
 final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
 {
     /**
-     * Get deterministic timestamp for current generation session.
+     * Get or create deterministic a session-based timestamp for current generation session.
      * Stores timestamp in session to ensure same timestamp between Preview and Generate requests.
      * Session key includes table and column to allow parallel generations.
+     *
+     * @param string $table
+     * @param string $column
+     * @return int
+     * @see https://www.yiiframework.com/doc/api/2.0/yii-web-session
+     * @see https://www.php.net/manual/en/function.time.php
      */
     private function getSessionTimestamp(string $table, string $column): int
     {
@@ -64,6 +78,14 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
         return [$file];
     }
 
+    /**
+     * Build migration class name based on table, column and timestamp.
+     * @param string $tableName
+     * @param string $columnName
+     * @param int $ts
+     * @return string
+     * @see https://www.php.net/manual/en/function.preg-replace.php
+     */
     private function buildMigrationClassName(string $tableName, string $columnName, int $ts): string
     {
         $safeTable = preg_replace('/[^A-Za-z0-9_]/', '_', $tableName);
@@ -72,8 +94,17 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
     }
 
     /**
-     * Build migration content. We generate conservative code: addColumn with generic `$this->string()`
+     * Build migration class content. We generate conservative code: addColumn with generic `$this->string()`
      * and a commented example of how to run ALTER TABLE for MySQL position if needed.
+     * @param TableSchema $table
+     * @param string $baseName
+     * @param array $columns
+     * @param string $newColumnName
+     * @param string $className
+     * @return string
+     * @see https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.heredoc
+     * @see https://www.php.net/manual/en/function.sprintf.php
+     * @see https://www.yiiframework.com/doc/api/2.0/yii-db-migration
      */
     private function buildMigrationContent(TableSchema $table, string $baseName, array $columns, string $newColumnName, string $className): string
     {
@@ -81,7 +112,7 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
         $source = $table->columns[$sourceName];
 
         $dbTypeHint = $this->normalizeDbTypeForMigration($source->dbType ?? null);
-        $allowNull = $source->allowNull ? 'true' : 'false';
+
         $tableName = $table->name;
         $positionComment = '';
 

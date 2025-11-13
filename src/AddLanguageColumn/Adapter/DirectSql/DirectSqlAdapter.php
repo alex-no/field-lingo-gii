@@ -2,7 +2,16 @@
 declare(strict_types=1);
 
 namespace AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\DirectSql;
-
+/**
+ * DirectSqlAdapter
+ *
+ * Generates SQL CodeFile(s) that add new language-localized columns directly.
+ * 
+ * @license https://opensource.org/licenses/MIT MIT
+ * @package AlexNo\FieldLingoGii\AddLanguageColumn
+ * @author Oleksandr Nosov <alex@4n.com.ua>
+ * @copyright 2025 Oleksandr Nosov
+ */
 use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\AbstractAdapter;
 use yii\db\TableSchema;
 use AlexNo\FieldLingoGii\AddLanguageColumn\Adapter\AdapterInterface;
