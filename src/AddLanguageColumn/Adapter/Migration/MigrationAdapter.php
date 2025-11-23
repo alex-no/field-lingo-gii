@@ -81,10 +81,11 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
 
     /**
      * Build migration class name based on table, column and timestamp.
-     * @param string $tableName
-     * @param string $columnName
-     * @param int $ts
-     * @return string
+     *
+     * @param string $tableName Table name
+     * @param string $columnName Column name
+     * @param int $ts Unix timestamp
+     * @return string Migration class name (e.g., m250101_120000_add_name_fr_to_users)
      * @see https://www.php.net/manual/en/function.preg-replace.php
      */
     private function buildMigrationClassName(string $tableName, string $columnName, int $ts): string
@@ -97,12 +98,13 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
     /**
      * Build migration class content. We generate conservative code: addColumn with generic `$this->string()`
      * and a commented example of how to run ALTER TABLE for MySQL position if needed.
-     * @param TableSchema $table
-     * @param string $baseName
-     * @param array $columns
-     * @param string $newColumnName
-     * @param string $className
-     * @return string
+     *
+     * @param TableSchema $table Table schema
+     * @param string $baseName Base name of the localized field (without language suffix)
+     * @param array $columns Existing language-specific columns
+     * @param string $newColumnName Name of the new column to add
+     * @param string $className Migration class name
+     * @return string Complete migration class code
      * @see https://www.php.net/manual/en/language.types.string.php#language.types.string.syntax.heredoc
      * @see https://www.php.net/manual/en/function.sprintf.php
      * @see https://www.yiiframework.com/doc/api/2.0/yii-db-migration
@@ -118,25 +120,24 @@ final class MigrationAdapter extends AbstractAdapter implements AdapterInterface
         $position = $this->options['position'] ?? 'after_all';
 
         // MySQL: execute precise ADD COLUMN with positioning
-        if (Yii::$app->db->driverName === 'mysql') {
-            $positionSql = $this->buildAddColumnPositionedSql(
-                $table,
-                $baseName,
-                $newColumnName,
-                $columns,
-                $position,
-                $source->dbType ?? 'VARCHAR(255)',
-                $source->allowNull ?? true
-            );
-
-            $safeUp = "\$this->execute(\"{$positionSql}\");";
-        } else {
-            // fallback for other DBs
-            $safeUp = "\$this->addColumn('{$tableName}', '{$newColumnName}', \$this->string());";
-        }
+        $safeUp = match (Yii::$app->db->driverName) {
+            'mysql' => sprintf(
+                "\$this->execute(\"%s\");",
+                $this->buildAddColumnPositionedSql(
+                    $table,
+                    $baseName,
+                    $newColumnName,
+                    $columns,
+                    $position,
+                    $source->dbType ?? 'VARCHAR(255)',
+                    $source->allowNull ?? true
+                )
+            ),
+            default => "\$this->addColumn('{$tableName}', '{$newColumnName}', \$this->string());"
+        };
 
         // produce migration class content (conservative, user can edit for exact types/positions)
-        $class = <<<PHP
+        return <<<PHP
 <?php
 declare(strict_types=1);
 
@@ -163,20 +164,19 @@ final class {$className} extends Migration
     }
 }
 PHP;
-
-        return $class;
     }
 
     /**
      * Build MySQL ADD COLUMN SQL with proper positioning based on options.
      *
-     * @param TableSchema $table
-     * @param string $newColumnName
-     * @param array $columns
-     * @param string $position 'before_all', 'after_all', or column name
-     * @param string $dbType
-     * @param bool $allowNull
-     * @return string
+     * @param TableSchema $table Table schema
+     * @param string $baseName Base name of the localized field
+     * @param string $newColumnName Name of the new column
+     * @param array $columns Existing language-specific columns
+     * @param string $position Position strategy: 'before_all', 'after_all', or language code
+     * @param string $dbType MySQL column type definition
+     * @param bool $allowNull Whether column allows NULL values
+     * @return string Complete ALTER TABLE SQL statement
      */
     private function buildAddColumnPositionedSql(
         TableSchema $table,
@@ -190,16 +190,16 @@ PHP;
         $db = Yii::$app->db;
         $tableName = $db->quoteTableName($table->name);
         $quotedNewColumn = $db->quoteColumnName($newColumnName);
+        $nullClause = $allowNull ? 'NULL' : 'NOT NULL';
 
         if ($position === 'before_all') {
-            return "ALTER TABLE {$tableName} ADD COLUMN {$quotedNewColumn} {$dbType} "
-                 . ($allowNull ? 'NULL' : 'NOT NULL') . " FIRST;";
+            return "ALTER TABLE {$tableName} ADD COLUMN {$quotedNewColumn} {$dbType} {$nullClause} FIRST;";
         }
 
         $after = $position === 'after_all' ? $columns[array_key_last($columns)] : "{$baseName}_{$position}";
         $quotedAfter = $db->quoteColumnName($after);
-        return "ALTER TABLE {$tableName} ADD COLUMN {$quotedNewColumn} {$dbType} "
-             . ($allowNull ? 'NULL' : 'NOT NULL') . " AFTER {$quotedAfter};";
+
+        return "ALTER TABLE {$tableName} ADD COLUMN {$quotedNewColumn} {$dbType} {$nullClause} AFTER {$quotedAfter};";
     }
 
 }

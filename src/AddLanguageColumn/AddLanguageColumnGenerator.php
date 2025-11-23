@@ -137,24 +137,25 @@ class AddLanguageColumnGenerator extends Generator
      */
     public function rules(): array
     {
-        return array_merge(parent::rules(), [
+        return [
+            ...parent::rules(),
             [['newLanguageSuffix', 'position'], 'required'],
             ['newLanguageSuffix', 'match', 'pattern' => '/^[a-z]{2}$/i', 'message' => 'Language suffix must be 2 letters.'],
             ['languages', 'each', 'rule' => ['string']],
             ['languages', 'validateLanguagesNotEmpty'],
             ['applyModeValue', 'required'],
             ['applyModeValue', 'in', 'range' => [ApplyMode::DIRECT_SQL->value, ApplyMode::MIGRATION->value]],
-        ]);
+        ];
     }
 
     /**
      * Validate that languages array is not empty.
      *
-     * @param string $attribute
-     * @param mixed $params
+     * @param string $attribute The attribute being validated
+     * @param mixed $params Additional validation parameters
      * @return void
      */
-    public function validateLanguagesNotEmpty($attribute, $params): void
+    public function validateLanguagesNotEmpty(string $attribute, mixed $params): void
     {
         if (empty($this->$attribute)) {
             $this->addError($attribute, 'Please select at least one base language.');
@@ -323,14 +324,15 @@ class AddLanguageColumnGenerator extends Generator
 
         $validGroups = [];
         $languageCount = count($this->languages);
+        $columnKeys = array_keys($tableSchema->columns);
+
         foreach ($candidates as $base => $langs) {
             $langs = array_unique($langs);
             if (count($langs) === $languageCount) {
                 // sort columns by appearance order in table schema (preserve original order)
-                usort($langs, function (string $a, string $b) use ($tableSchema): int {
-                    $keys = array_keys($tableSchema->columns);
-                    return array_search($a, $keys, true) <=> array_search($b, $keys, true);
-                });
+                usort($langs, fn(string $a, string $b): int =>
+                    array_search($a, $columnKeys, true) <=> array_search($b, $columnKeys, true)
+                );
                 $validGroups[$base] = $langs;
             }
         }

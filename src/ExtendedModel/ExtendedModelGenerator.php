@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace AlexNo\FieldLingoGii\ExtendedModel;
 /**
  * Extended Model Generator for Field-Lingo (Yii2 / Gii)
@@ -17,19 +19,19 @@ use yii\gii\CodeFile;
 
 class ExtendedModelGenerator extends Generator
 {
-    public $generateChildClass = true;
+    public bool $generateChildClass = true;
 
-    public $baseClassOptions = [
+    public array $baseClassOptions = [
         'yii\db\ActiveRecord',
         'AlexNo\FieldLingo\Adapters\Yii2\LingoActiveRecord',
     ];
 
-    public $queryBaseClassOptions = [
+    public array $queryBaseClassOptions = [
         'yii\db\ActiveQuery',
         'AlexNo\FieldLingo\Adapters\Yii2\LingoActiveQuery',
     ];
 
-    public function init()
+    public function init(): void
     {
         parent::init();
 
@@ -37,51 +39,54 @@ class ExtendedModelGenerator extends Generator
         $config = Yii::$app->getModule('gii')->generators['model'] ?? [];
 
         if (!empty($config['baseClassOptions']) && is_array($config['baseClassOptions'])) {
-            $this->baseClassOptions = array_unique(array_merge($this->baseClassOptions, $config['baseClassOptions']));
+            $this->baseClassOptions = array_unique([...$this->baseClassOptions, ...$config['baseClassOptions']]);
         }
 
         if (!empty($config['queryBaseClassOptions']) && is_array($config['queryBaseClassOptions'])) {
-            $this->queryBaseClassOptions = array_unique(array_merge($this->queryBaseClassOptions, $config['queryBaseClassOptions']));
+            $this->queryBaseClassOptions = array_unique([...$this->queryBaseClassOptions, ...$config['queryBaseClassOptions']]);
         }
     }
 
-    public function getName()
+    public function getName(): string
     {
         return 'Field-Lingo Extended Model Generator';
     }
 
-    public function getDescription()
+    public function getDescription(): string
     {
         return 'Generates a pair of classes - parent (base) and child. Parent contains generated code; child is for your custom logic.';
     }
 
-    public function rules()
+    public function rules(): array
     {
-        return array_merge(parent::rules(), [
+        return [
+            ...parent::rules(),
             ['generateChildClass', 'boolean'],
-        ]);
+        ];
     }
 
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
-        return array_merge(parent::attributeLabels(), [
+        return [
+            ...parent::attributeLabels(),
             'generateChildClass' => 'Generate child model',
-        ]);
+        ];
     }
 
-    public function hints()
+    public function hints(): array
     {
-        return array_merge(parent::hints(), [
+        return [
+            ...parent::hints(),
             'generateChildClass' => 'If checked, an empty child class will be created for your logic.',
-        ]);
+        ];
     }
 
-    public function stickyAttributes()
+    public function stickyAttributes(): array
     {
-        return array_merge(parent::stickyAttributes(), ['generateChildClass']);
+        return [...parent::stickyAttributes(), 'generateChildClass'];
     }
 
-    public function generateRules($table)
+    public function generateRules($table): array
     {
         $rules = parent::generateRules($table);
 
@@ -96,7 +101,7 @@ class ExtendedModelGenerator extends Generator
             }
         }
 
-        if (!empty($emailFields)) {
+        if ($emailFields !== []) {
             $rules[] = "[['" . implode("', '", $emailFields) . "'], 'email']";
         }
 
@@ -108,7 +113,7 @@ class ExtendedModelGenerator extends Generator
      *
      * @return CodeFile[]
      */
-    public function generate()
+    public function generate(): array
     {
         $files = parent::generate();
         $modelClass = $this->getModelClass();
@@ -138,7 +143,7 @@ class ExtendedModelGenerator extends Generator
             // Additional security check: ensure the path is within expected directory
             $realPath = realpath(dirname($childPath));
             $expectedBase = realpath(Yii::getAlias('@app'));
-            if ($realPath === false || $expectedBase === false || strpos($realPath, $expectedBase) !== 0) {
+            if ($realPath === false || $expectedBase === false || !str_starts_with($realPath, $expectedBase)) {
                 throw new \RuntimeException('Invalid path: outside of application directory.');
             }
 
@@ -159,7 +164,7 @@ class ExtendedModelGenerator extends Generator
      * @return string
      * @throws \RuntimeException
      */
-    public function getModelClass()
+    public function getModelClass(): string
     {
         if (empty($this->modelClass)) {
             throw new \RuntimeException('modelClass is not set.');
@@ -172,13 +177,13 @@ class ExtendedModelGenerator extends Generator
      *
      * @return string
      */
-    public function formView()
+    public function formView(): string
     {
         // path to the form view inside this package
         return '@vendor/alex-no/field-lingo-gii/src/ExtendedModel/views/form.php';
     }
 
-    public function generateLabels($table)
+    public function generateLabels($table): array
     {
         $labels = parent::generateLabels($table);
         foreach ($labels as &$label) {
@@ -194,7 +199,7 @@ class ExtendedModelGenerator extends Generator
      * @param null|string $formName
      * @return bool
      */
-    public function load($data, $formName = null)
+    public function load($data, $formName = null): bool
     {
         $loaded = parent::load($data, $formName);
 
