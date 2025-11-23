@@ -128,7 +128,20 @@ class ExtendedModelGenerator extends Generator
         // generate child class if requested
         if ($this->generateChildClass) {
             // $this->ns is provided by user in the generator form (e.g. app\models)
+            // Validate namespace and model class to prevent path traversal
+            if (preg_match('/[^a-zA-Z0-9_\\\\]/', $this->ns) || preg_match('/[^a-zA-Z0-9_]/', $modelClass)) {
+                throw new \RuntimeException('Invalid namespace or model class name.');
+            }
+
             $childPath = Yii::getAlias('@' . str_replace('\\', '/', $this->ns)) . '/' . $modelClass . '.php';
+
+            // Additional security check: ensure the path is within expected directory
+            $realPath = realpath(dirname($childPath));
+            $expectedBase = realpath(Yii::getAlias('@app'));
+            if ($realPath === false || $expectedBase === false || strpos($realPath, $expectedBase) !== 0) {
+                throw new \RuntimeException('Invalid path: outside of application directory.');
+            }
+
             if (!file_exists($childPath)) {
                 $files[] = new CodeFile(
                     $childPath,
@@ -162,7 +175,7 @@ class ExtendedModelGenerator extends Generator
     public function formView()
     {
         // path to the form view inside this package
-        return '@vendor/alex-no/field-lingo-gii/src/extendedModel/views/form.php';
+        return '@vendor/alex-no/field-lingo-gii/src/ExtendedModel/views/form.php';
     }
 
     public function generateLabels($table)

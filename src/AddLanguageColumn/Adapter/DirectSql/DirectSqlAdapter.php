@@ -37,23 +37,25 @@ final class DirectSqlAdapter extends AbstractAdapter
         $positionClause = '';
         $position = $this->options['position'] ?? 'after_all';
 
+        $db = \Yii::$app->db;
+
         if ($position === 'before_all') {
             $allNames = array_keys($table->columns);
             $idx = array_search($columns[0], $allNames, true);
             if ($idx !== false && $idx > 0) {
-                $positionClause = " AFTER `{$allNames[$idx - 1]}`";
+                $positionClause = " AFTER " . $db->quoteColumnName($allNames[$idx - 1]);
             } else {
                 $positionClause = ' FIRST';
             }
         } else {
             $sourceForPos = ($position === 'after_all') ? $columns[array_key_last($columns)] : "{$baseName}_{$position}";
-            $positionClause = " AFTER `{$sourceForPos}`";
+            $positionClause = " AFTER " . $db->quoteColumnName($sourceForPos);
         }
 
         $sql = sprintf(
-            'ALTER TABLE `%s` ADD COLUMN `%s` %s %s%s;',
-            $table->name,
-            $newColumn,
+            'ALTER TABLE %s ADD COLUMN %s %s %s%s;',
+            $db->quoteTableName($table->name),
+            $db->quoteColumnName($newColumn),
             $source->dbType,
             $source->allowNull ? 'NULL' : 'NOT NULL',
             $positionClause

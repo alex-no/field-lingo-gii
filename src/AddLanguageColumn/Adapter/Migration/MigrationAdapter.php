@@ -187,16 +187,19 @@ PHP;
         string $dbType = 'VARCHAR(255)',
         bool $allowNull = true
     ): string {
-        $tableName = $table->name;
+        $db = Yii::$app->db;
+        $tableName = $db->quoteTableName($table->name);
+        $quotedNewColumn = $db->quoteColumnName($newColumnName);
 
         if ($position === 'before_all') {
-            return "ALTER TABLE `{$tableName}` ADD COLUMN `{$newColumnName}` {$dbType} "
+            return "ALTER TABLE {$tableName} ADD COLUMN {$quotedNewColumn} {$dbType} "
                  . ($allowNull ? 'NULL' : 'NOT NULL') . " FIRST;";
         }
 
-        $after = $position === 'after_all' ? $columns[array_key_last($columns)] : $position;
-        return "ALTER TABLE `{$tableName}` ADD COLUMN `{$newColumnName}` {$dbType} "
-             . ($allowNull ? 'NULL' : 'NOT NULL') . " AFTER `{$baseName}_{$after}`;";
+        $after = $position === 'after_all' ? $columns[array_key_last($columns)] : "{$baseName}_{$position}";
+        $quotedAfter = $db->quoteColumnName($after);
+        return "ALTER TABLE {$tableName} ADD COLUMN {$quotedNewColumn} {$dbType} "
+             . ($allowNull ? 'NULL' : 'NOT NULL') . " AFTER {$quotedAfter};";
     }
 
 }

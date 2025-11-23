@@ -39,6 +39,13 @@ class AddLanguageColumnGenerator extends Generator
     public string $migrationPath = 'migrations';
 
     /**
+     * Table name for loading available languages. Defaults to 'language'.
+     *
+     * @var string
+     */
+    public string $languageTableName = 'language';
+
+    /**
      * @var ApplyMode Selected apply mode (migration/direct sql)
      */
     public ?ApplyMode $applyMode = null;
@@ -81,8 +88,10 @@ class AddLanguageColumnGenerator extends Generator
     private function loadAvailableLanguages(): void
     {
         try {
-            $rows = Yii::$app->db
-                ->createCommand('SELECT `code`, `full_name` FROM `language` WHERE `is_enabled` = 1 ORDER BY `order`')
+            $db = Yii::$app->db;
+            $tableName = $db->quoteTableName($this->languageTableName);
+            $rows = $db
+                ->createCommand("SELECT `code`, `full_name` FROM {$tableName} WHERE `is_enabled` = 1 ORDER BY `order`")
                 ->queryAll();
         } catch (\Throwable $e) {
             $rows = [];

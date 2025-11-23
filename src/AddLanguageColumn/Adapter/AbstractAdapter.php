@@ -54,6 +54,6 @@ abstract class AbstractAdapter implements AdapterInterface
         }
 
         $candidate = "{$baseName}_{$position}";
-        return $table->columns[$candidate] ? $candidate : ($columns[array_key_last($columns)] ?? null);
+        return isset($table->columns[$candidate]) ? $candidate : ($columns[array_key_last($columns)] ?? null);
     }
 }
